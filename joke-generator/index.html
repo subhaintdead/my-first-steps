@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Random Joke App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6dd5fa, #ff758c);
+            padding: 20px;
+        }
+
+        .joke-container {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .joke-container.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .joke-container.fade-out {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        h1 {
+            color: #222;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        select, button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.3s ease;
+        }
+
+        select {
+            background: #f0f0f0;
+            color: #333;
+            min-width: 150px;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.3);
+        }
+
+        #new-joke-btn, #copy-joke-btn {
+            background: #6200ea;
+            color: #fff;
+        }
+
+        #new-joke-btn:hover, #copy-joke-btn:hover {
+            background: #4500a0;
+            transform: scale(1.05);
+        }
+
+        #new-joke-btn:active, #copy-joke-btn:active {
+            transform: scale(0.95);
+        }
+
+        #copy-joke-btn.copied {
+            background: #28a745;
+        }
+
+        #joke-text {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 20px;
+            min-height: 60px;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        #joke-text.fade {
+            opacity: 0;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 30px;
+            height: 30px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6200ea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        .error {
+            color: #d32f2f;
+            font-style: italic;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .joke-container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            #joke-text {
+                font-size: 1rem;
+            }
+
+            select, button {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="joke-container fade-in">
+        <h1>Random Joke Generator</h1>
+        <div class="controls">
+            <select id="category-select">
+                <option value="">All Categories</option>
+                <option value="dad">Dad Jokes</option>
+                <option value="programming">Programming</option>
+                <option value="knock">Knock Knock</option>
+                <option value="pun">Puns</option>
+            </select>
+            <button id="new-joke-btn">Get New Joke</button>
+            <button id="copy-joke-btn">Copy Joke</button>
+        </div>
+        <p id="joke-text">Click the button to get a joke!</p>
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        const jokeContainer = document.querySelector('.joke-container');
+        const jokeText = document.getElementById('joke-text');
+        const categorySelect = document.getElementById('category-select');
+        const newJokeBtn = document.getElementById('new-joke-btn');
+        const copyJokeBtn = document.getElementById('copy-joke-btn');
+        const loadingSpinner = document.querySelector('.loading-spinner');
+
+        // Load saved category from localStorage
+        const savedCategory = localStorage.getItem('jokeCategory') || '';
+        categorySelect.value = savedCategory;
+
+        async function fetchJoke() {
+            try {
+                // Show loading state
+                jokeText.classList.add('fade');
+                loadingSpinner.classList.add('active');
+                newJokeBtn.disabled = true;
+                copyJokeBtn.disabled = true;
+
+                // Determine API endpoint based on category
+                const category = categorySelect.value;
+                const url = category
+                    ? `https://icanhazdadjoke.com/search?term=${encodeURIComponent(category)}`
+                    : 'https://icanhazdadjoke.com/';
+                
+                // Fetch joke
+                const response = await fetch(url, {
+                    headers: { Accept: 'application/json' }
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+
+                // Handle search results vs single joke
+                const joke = category ? (data.results[0]?.joke || 'No jokes found for this category.') : data.joke;
+
+                // Update UI with animation
+                setTimeout(() => {
+                    jokeText.textContent = joke;
+                    jokeText.classList.remove('fade');
+                    loadingSpinner.classList.remove('active');
+                    newJokeBtn.disabled = false;
+                    copyJokeBtn.disabled = false;
+                }, 500);
+            } catch (error) {
+                jokeText.textContent = 'Oops! Something went wrong. Try again.';
+                jokeText.classList.add('error');
+                jokeText.classList.remove('fade');
+                loadingSpinner.classList.remove('active');
+                newJokeBtn.disabled = false;
+                copyJokeBtn.disabled = false;
+                console.error('Error fetching joke:', error);
+            }
+        }
+
+        // Copy joke to clipboard
+        function copyJoke() {
+            const joke = jokeText.textContent;
+            if (joke && !joke.includes('Click') && !joke.includes('Oops')) {
+                navigator.clipboard.writeText(joke).then(() => {
+                    copyJokeBtn.textContent = 'Copied!';
+                    copyJokeBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyJokeBtn.textContent = 'Copy Joke';
+                        copyJokeBtn.classList.remove('copied');
+                    }, 2000);
+                });
+            }
+        }
+
+        // Event listeners
+        newJokeBtn.addEventListener('click', fetchJoke);
+        copyJokeBtn.addEventListener('click', copyJoke);
+        categorySelect.addEventListener('change', () => {
+            localStorage.setItem('jokeCategory', categorySelect.value);
+            fetchJoke();
+        });
+
+        // Animate container on load
+        window.addEventListener('load', () => {
+            jokeContainer.classList.remove('fade-out');
+            jokeContainer.classList.add('fade-in');
+            fetchJoke();
+        });
+    </script>
+</body>
+</html>
