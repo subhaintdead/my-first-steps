@@ -6,5 +6,5 @@ They include:
 
 **Joke generator**: made a joke generator with the help of icanhazdadjoke.com API. fresh jokes. 🦭
 
-**Image to text converter**: make one, with the help of tutorials. worked. it's web based as well. 
+**Image to text converter**: made one, with the help of tutorials. worked. it's web based as well. 
 
